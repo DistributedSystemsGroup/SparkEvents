@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from numpy import array
+
 class Executor:
     def __init__(self, data):
         self.executor_id = data["Executor ID"]
@@ -19,6 +21,13 @@ class Executor:
         self.remove_reason = data["Removed Reason"]
         self.remove_timestamp = data["Timestamp"]
 
+    def calc_task_times(self):
+        runtimes = []
+        for t in self.tasks:
+            runtimes.append(t.finish_time - t.launch_time)
+        runtimes = array(runtimes)
+        return runtimes.mean(), runtimes.std(), runtimes.min(), runtimes.max()
+
     def report(self, indent):
         pfx = " " * indent
         s = pfx + "Executor {}\n".format(self.executor_id)
@@ -31,6 +40,9 @@ class Executor:
             s += pfx + "Run time: {}ms\n".format(self.remove_timestamp - self.start_timestamp)
         s += pfx + "Number of block managers: {}\n".format(len(self.block_managers))
         s += pfx + "Number of executed tasks: {}\n".format(len(self.tasks))
+        avgrt, stdrt, minrt, maxrt = self.calc_task_times()
+        s += pfx + "Average task runtime: {} (stddev {})\n".format(avgrt, stdrt)
+        s += pfx + "Min/max task time: {} min, {} max\n".format(minrt, maxrt)
         s += pfx + "Termination reason: {}\n".format(self.remove_reason)
         return s
 

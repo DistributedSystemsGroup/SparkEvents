@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from numpy import *
+
 from executor import Executor
 from job import Job
 from block_manager import BlockManager
@@ -124,6 +126,22 @@ class SparkRun:
                     if s.stage_id == t.stage_id:
                         s.tasks.append(t)
 
+        self.parsed_data["num_failed_tasks"] = 0
+        self.parsed_data["num_success_tasks"] = 0
+        for t in self.tasks.values():
+            if t.end_reason != "Success":
+                self.parsed_data["num_failed_tasks"] += 1
+            else:
+                self.parsed_data["num_success_tasks"] += 1
+
+        # Total average and stddev task run time
+        all_runtimes = [ x.finish_time - x.launch_time for x in self.tasks.values() if x.end_reason == "Success" ]
+        all_runtimes = array(all_runtimes)
+        self.parsed_data["tot_avg_task_runtime"] = all_runtimes.mean()
+        self.parsed_data["tot_std_task_runtime"] = all_runtimes.std()
+        self.parsed_data["min_task_runtime"] = all_runtimes.min()
+        self.parsed_data["max_task_runtime"] = all_runtimes.max()
+
     def generate_report(self):
         s = "Report for '{}' execution {}\n".format(self.parsed_data["app_name"], self.parsed_data["app_id"])
         s += "Spark version: {}\n".format(self.parsed_data["spark_version"])
@@ -135,6 +153,11 @@ class SparkRun:
             s += j.report(0)
             s += "\n"
         s += "---> Tasks <---\n"
+        s += "Total tasks: {}\n".format(len(self.tasks))
+        s += "Successful tasks: {}\n".format(self.parsed_data["num_success_tasks"])
+        s += "Failed tasks: {}\n".format(self.parsed_data["num_failed_tasks"])
+        s += "Task average runtime: {} ({} stddev)\n".format(self.parsed_data["tot_avg_task_runtime"], self.parsed_data["tot_std_task_runtime"])
+        s += "Task min/max runtime: {} min, {} max\n".format(self.parsed_data["min_task_runtime"], self.parsed_data["max_task_runtime"])
         for t in self.tasks.values():
             s += t.report(0)
             s += "\n"
@@ -142,9 +165,9 @@ class SparkRun:
         for e in self.executors.values():
             s += e.report(0)
             s += "\n"
-        s += "---> Block managers <---\n"
-        for bm in self.block_managers:
-            s += bm.report(0)
+#        s += "---> Block managers <---\n"
+#        for bm in self.block_managers:
+#            s += bm.report(0)
         return s
 
     def get_app_name(self):
