@@ -5,7 +5,7 @@ import os
 
 from spark_events_parser.spark_run import SparkRun
 
-PATH = os.path.join("data", "testdfsio")
+PATH = os.path.join("sample_data", "testdfsio")
 
 
 
