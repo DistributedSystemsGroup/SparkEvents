@@ -51,6 +51,8 @@ class SparkRun:
                 self.do_SparkListenerStageCompleted(json_data)
             elif event_type == "SparkListenerJobEnd":
                 self.do_SparkListenerJobEnd(json_data)
+            elif event_type == "SparkListenerApplicationEnd":
+                self.do_SparkListenerApplicationEnd(json_data)
             else:
                 print("WARNING: unknown event type: " + event_type)
 
@@ -113,6 +115,9 @@ class SparkRun:
         job_id = data["Job ID"]
         self.jobs[job_id].complete(data)
 
+    def do_SparkListenerApplicationEnd(self, data):
+        self.parsed_data["app_end_timestamp"] = data["Timestamp"]
+
     def correlate(self):
         # Link block managers and executors
         for bm in self.block_managers:
@@ -142,11 +147,16 @@ class SparkRun:
         self.parsed_data["min_task_runtime"] = all_runtimes.min()
         self.parsed_data["max_task_runtime"] = all_runtimes.max()
 
+        # Application run time
+        self.parsed_data["application_runtime"] = self.parsed_data["app_end_timestamp"] - self.parsed_data["app_start_timestamp"]
+
     def generate_report(self):
         s = "Report for '{}' execution {}\n".format(self.parsed_data["app_name"], self.parsed_data["app_id"])
         s += "Spark version: {}\n".format(self.parsed_data["spark_version"])
         s += "Java version: {}\n".format(self.parsed_data["java_version"])
         s += "Start time: {}\n".format(datetime.fromtimestamp(self.parsed_data["app_start_timestamp"]/1000))
+        s += "End time: {}\n".format(datetime.fromtimestamp(self.parsed_data["app_end_timestamp"]/1000))
+        s += "Run time: {}ms\n".format(self.parsed_data["application_runtime"])
         s += "Commandline: {}\n\n".format(self.parsed_data["commandline"])
         s += "---> Jobs <---\n"
         for j in self.jobs.values():
