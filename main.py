@@ -84,23 +84,23 @@ def generate_graph_stage(workload_name, data, scenarios):
         else:
             return 'r'
 
-    N = len(scenarios)
+    stage_names = [ st["name"] for st in data["standard"][workload_name][2] ]
+    N = len(stage_names)
     ind = arange(N)
-    bar_width = 0.15
+    bar_width = 0.10
     fig, ax = plt.subplots()
 
     rects = []
     offset = 0
     color = None
-    stage_names = [ st["name"] for st in data["standard"][workload_name][2] ]
-    for st in range(len(data["standard"][workload_name][2])):
+    for s in scenarios:
         color = get_new_color(color)
         means = []
         stddev = []
-        for s in scenarios:
+        for st_idx in range(len(data["standard"][workload_name][2])):
             try:
-                means.append(data[s][workload_name][2][st]["task_mean"])
-                stddev.append(data[s][workload_name][2][st]["task_std"])
+                means.append(data[s][workload_name][2][st_idx]["task_mean"])
+                stddev.append(data[s][workload_name][2][st_idx]["task_std"])
             except IndexError:
                 means.append(0)
                 stddev.append(0)
@@ -112,8 +112,8 @@ def generate_graph_stage(workload_name, data, scenarios):
     ax.set_xticks(ind + (bar_width * (N / 2)))
 
     if workload_name != "tpcds":
-        ax.set_xticklabels(scenarios)
-        ax.legend([ x[0] for x in rects], stage_names) #, loc=2)
+        ax.set_xticklabels(stage_names)
+        ax.legend([ x[0] for x in rects], scenarios) #, loc=2)
 
     plt.savefig(os.path.join(BASE_DIR, 'task_runtime_%s.pdf' % workload_name), format='pdf')
 
@@ -171,10 +171,10 @@ if __name__ == "__main__":
             print("-> Workload {}".format(w))
             print(" -> Mean: %.2f" % data[s][w][0])
             print(" -> Stddev: %.2f" % data[s][w][1])
-            for st in data[s][w][2]:
-                print(" -> Stage %s" % st["name"])
-                print("   -> Mean task time %.3f" % st["task_mean"])
-                print("   -> Stddev task time %.3f" % st["task_std"])
+#            for st in data[s][w][2]:
+#                print(" -> Stage %s" % st["name"])
+#                print("   -> Mean task time %.3f" % st["task_mean"])
+#                print("   -> Stddev task time %.3f" % st["task_std"])
 
     generate_graph(data, workloads, scenarios)
 
